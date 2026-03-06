@@ -1,27 +1,72 @@
-<!doctype html>
-<html>
-	<head>
-		<meta charset="utf-8" />
-		<meta
-			name="viewport"
-			content="width=device-width, initial-scale=1.0, shrink-to-fit=no"
-		/>
-		<title>Scramjet | Error</title>
-		<base href="/" />
-		<link rel="shortcut icon" content="favicon.ico" />
-		<link rel="stylesheet" href="index.css" />
-	</head>
-
-	<body>
-		<div class="logo-wrapper left-margin">
-			<h1>Scramjet | Error</h1>
-		</div>
-		<div class="desc left-margin">
-			<p>The server could not route your request.</p>
-		</div>
-		<footer>
-			<a title="License information" href="credits.html">Credits</a>
-			<span>Scramjet &copy; MW 2025</span>
-		</footer>
-	</body>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cannot Connect</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Crimson+Text:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0e0b07;
+    color: #a89880;
+    font-family: 'Crimson Text', serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    gap: 16px;
+  }
+  .code {
+    font-family: 'Cinzel', serif;
+    font-size: 80px;
+    font-weight: 700;
+    color: #2a1f10;
+    letter-spacing: 8px;
+    line-height: 1;
+  }
+  .divider {
+    width: 80px; height: 1px;
+    background: linear-gradient(90deg, transparent, #c9952a, transparent);
+  }
+  .title {
+    font-family: 'Cinzel', serif;
+    font-size: 14px;
+    letter-spacing: 4px;
+    color: #5a4a35;
+  }
+  .desc {
+    font-style: italic;
+    font-size: 15px;
+    color: #3a3020;
+    max-width: 320px;
+    text-align: center;
+    line-height: 1.6;
+  }
+  .back {
+    margin-top: 12px;
+    padding: 10px 28px;
+    background: none;
+    border: 1px solid #2a2218;
+    color: #5a4a35;
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    letter-spacing: 2px;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all 0.2s;
+    text-decoration: none;
+    display: inline-block;
+  }
+  .back:hover { border-color: #c9952a; color: #c9952a; }
+</style>
+</head>
+<body>
+  <div class="code">!</div>
+  <div class="divider"></div>
+  <div class="title">CANNOT CONNECT</div>
+  <div class="desc">The page could not be reached. It may be unavailable or blocking this connection.</div>
+  <a class="back" href="javascript:history.back()">GO BACK</a>
+</body>
 </html>
