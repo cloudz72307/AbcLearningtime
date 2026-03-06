@@ -9,22 +9,34 @@
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-<!-- Scramjet client -->
+<!-- Scramjet -->
 <script src="/scramjet/scramjet.codecs.js"></script>
 <script src="/scramjet/scramjet.shared.js"></script>
 <script src="/scramjet/scramjet.config.js"></script>
 <script src="/scramjet/scramjet.client.js"></script>
 <script>
-  // Register Scramjet service worker on load
-  (async () => {
-    if ('serviceWorker' in navigator) {
-      try {
-        await navigator.serviceWorker.register('/scramjet/scramjet.sw.js', { scope: '/scramjet/' });
-        const client = new ScramjetClient(window);
-        client.connect('/wisp/');
-      } catch(e) { console.warn('Scramjet SW failed:', e); }
+  let scramjetFrame = null;
+
+  async function initScramjet() {
+    try {
+      const { ScramjetController } = $scramjetLoadController();
+      const sj = new ScramjetController({ prefix: '/scramjet/' });
+      await sj.init('/scramjet/scramjet.sw.js');
+      scramjetFrame = sj.createFrame();
+      const container = document.getElementById('browser-frame-container');
+      if (container) {
+        scramjetFrame.frame.style.cssText = 'width:100%;height:100%;border:none;flex:1;';
+        container.appendChild(scramjetFrame.frame);
+      }
+      scramjetFrame.addEventListener('urlchange', (e) => {
+        document.getElementById('browser-url').value = e.url || '';
+      });
+    } catch(e) {
+      console.warn('Scramjet init failed:', e);
     }
-  })();
+  }
+
+  window.addEventListener('load', initScramjet);
 </script>
 <style>
   :root {
@@ -993,7 +1005,7 @@
       <button class="proxy-quick" onclick="loadBrowser('https://www.tiktok.com')">TikTok</button>
       <button class="proxy-quick" onclick="loadBrowser('https://www.twitch.tv')">Twitch</button>
     </div>
-    <iframe class="browser-frame" id="browser-frame" src="about:blank" sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-top-navigation"></iframe>
+    <div id="browser-frame-container" style="flex:1;display:flex;flex-direction:column;overflow:hidden;background:#0e0b07;"></div>
   </div>
 
   <!-- SETTINGS -->
@@ -1072,19 +1084,7 @@
     currentPage = page;
   }
 
-  // Same origin now — use relative path
-  const SCRAMJET = "";
-
-  function proxy(url) {
-    return `/scramjet/#${btoa(url)}`;
-  }
-
-  function browserBack()    { document.getElementById('browser-frame').contentWindow?.history.back(); }
-  function browserForward() { document.getElementById('browser-frame').contentWindow?.history.forward(); }
-  function browserReload()  {
-    const f = document.getElementById('browser-frame');
-    try { f.contentWindow?.location.reload(); } catch { f.src = f.src; }
-  }
+  function proxy(url) { return url; } // kept for compatibility
 
   function openGame(url) {
     navigate('browser');
@@ -1092,27 +1092,24 @@
   }
 
   function resetBrowser() {
-    const frame = document.getElementById('browser-frame');
     document.getElementById('browser-url').value = '';
-    frame.srcdoc = `<!DOCTYPE html><html><head><style>
-      *{margin:0;padding:0;box-sizing:border-box;}
-      body{background:#0e0b07;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:'Georgia',serif;color:#a89880;}
-      .clock{font-size:64px;font-weight:300;color:#c9952a;letter-spacing:8px;margin-bottom:8px;}
-      .date{font-size:13px;letter-spacing:4px;color:#5a4a35;margin-bottom:48px;}
-      .tagline{font-size:12px;letter-spacing:3px;color:#3a3020;}
-    </style></head><body>
-      <div class="clock" id="cl">--:--</div>
-      <div class="date" id="dt"></div>
-      <div class="tagline">ROME</div>
-      <script>
-        function tick(){
-          const n=new Date();
-          document.getElementById('cl').textContent=n.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-          document.getElementById('dt').textContent=n.toLocaleDateString([],{weekday:'long',month:'long',day:'numeric'});
-        }
-        tick(); setInterval(tick,1000);
-      <\/script>
-    </body></html>`;
+    const container = document.getElementById('browser-frame-container');
+    container.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:8px;">
+      <div style="font-family:'Cinzel',serif;font-size:56px;font-weight:300;color:#c9952a;letter-spacing:8px;" id="nb-clock">--:--</div>
+      <div style="font-family:'Cinzel',serif;font-size:11px;letter-spacing:4px;color:#3a3020;margin-top:6px;" id="nb-date"></div>
+      <div style="width:80px;height:1px;background:linear-gradient(90deg,transparent,#c9952a,transparent);margin:16px 0;"></div>
+      <div style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:4px;color:#1a1510;">ROME</div>
+    </div>`;
+    function tick() {
+      const n = new Date();
+      const c = document.getElementById('nb-clock');
+      const d = document.getElementById('nb-date');
+      if (c) c.textContent = n.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      if (d) d.textContent = n.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
+    }
+    tick();
+    if (window._nbTimer) clearInterval(window._nbTimer);
+    window._nbTimer = setInterval(tick, 1000);
   }
 
   function loadBrowser(url) {
@@ -1121,10 +1118,23 @@
     if (!target) return;
     if (!target.startsWith('http')) target = 'https://' + target;
     input.value = target;
-    const frame = document.getElementById('browser-frame');
-    frame.removeAttribute('srcdoc');
-    frame.src = `/scramjet/#${btoa(target)}`;
+    if (window._nbTimer) { clearInterval(window._nbTimer); window._nbTimer = null; }
+    const container = document.getElementById('browser-frame-container');
+    if (scramjetFrame) {
+      if (!container.contains(scramjetFrame.frame)) {
+        container.innerHTML = '';
+        scramjetFrame.frame.style.cssText = 'width:100%;height:100%;border:none;display:block;';
+        container.appendChild(scramjetFrame.frame);
+      }
+      scramjetFrame.go(target);
+    } else {
+      container.innerHTML = `<iframe src="${target}" style="width:100%;height:100%;border:none;" sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-top-navigation"></iframe>`;
+    }
   }
+
+  function browserBack()    { if (scramjetFrame) scramjetFrame.back(); }
+  function browserForward() { if (scramjetFrame) scramjetFrame.forward(); }
+  function browserReload()  { if (scramjetFrame) scramjetFrame.reload(); }
 
   // ── AI / ROMAN ──
   const WORKER_URL = "https://comet-ai.chaceroman684.workers.dev/";
